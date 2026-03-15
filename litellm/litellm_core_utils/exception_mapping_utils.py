@@ -121,6 +121,50 @@ class ExceptionCheckers:
                 return True
         return False
 
+    @staticmethod
+    def is_zhipu_error(error_str: str) -> bool:
+        """
+        Check if an error string indicates a ZhipuAI error.
+        
+        ZhipuAI returns errors in format:
+        "LLM error {error_code}: {error_description} (request_id: {request_id})"
+        
+        Example:
+        - "LLM error 1302: 您的账户已达到速率限制，请您控制请求频率 (request_id: 20260314181150e78d3666817a45ad)"
+        - "LLM error api_error: Internal Network Failure (request_id: 20260314180842aba0d80794934df6)"
+        """
+        if not isinstance(error_str, str):
+            return False
+
+        # 检查智谱AI的错误格式
+        if "LLM error " in error_str:
+            return True
+
+        return False
+
+    @staticmethod
+    def get_zhipu_error_type(error_str: str) -> str:
+        """
+        Get the specific error type from a ZhipuAI error string.
+        
+        Returns:
+            "rate_limit" - 速率限制
+            "internal_error" - 内部错误
+            "authentication_error" - 认证错误
+            "unknown" - 未知错误
+        """
+        if not isinstance(error_str, str):
+            return "unknown"
+
+        if "1302" in error_str or "速率限制" in error_str:
+            return "rate_limit"
+        elif "api_error" in error_str or "Internal Network Failure" in error_str:
+            return "internal_error"
+        elif "401" in error_str or "令牌已过期" in error_str or "验证不正确" in error_str:
+            return "authentication_error"
+        
+        return "unknown"
+
 
 def get_error_message(error_obj) -> Optional[str]:
     """
@@ -330,6 +374,49 @@ def exception_type(  # type: ignore  # noqa: PLR0915
             ################################################################################
             #################### Start of Provider Exception mapping ####################
             ################################################################################
+
+            ################################################################################
+            #################### ZhipuAI Error Check #######################################
+            ################################################################################
+            # Check for ZhipuAI errors (智谱AI) - handles HTTP 200 responses with error content
+            if ExceptionCheckers.is_zhipu_error(error_str):
+                zhipu_error_type = ExceptionCheckers.get_zhipu_error_type(error_str)
+                exception_mapping_worked = True
+                
+                if zhipu_error_type == "rate_limit":
+                    raise RateLimitError(
+                        message=f"ZhipuAI RateLimitError - {error_str}",
+                        model=model,
+                        llm_provider=custom_llm_provider,
+                        response=litellm_response_headers,
+                        litellm_debug_info=extra_information,
+                    )
+                elif zhipu_error_type == "internal_error":
+                    raise InternalServerError(
+                        message=f"ZhipuAI InternalServerError - {error_str}",
+                        model=model,
+                        llm_provider=custom_llm_provider,
+                        response=litellm_response_headers,
+                        litellm_debug_info=extra_information,
+                    )
+                elif zhipu_error_type == "authentication_error":
+                    raise AuthenticationError(
+                        message=f"ZhipuAI AuthenticationError - {error_str}",
+                        model=model,
+                        llm_provider=custom_llm_provider,
+                        response=litellm_response_headers,
+                        litellm_debug_info=extra_information,
+                    )
+                else:
+                    # Unknown ZhipuAI error, treat as generic API error
+                    raise APIError(
+                        status_code=500,
+                        message=f"ZhipuAI APIError - {error_str}",
+                        model=model,
+                        llm_provider=custom_llm_provider,
+                        litellm_debug_info=extra_information,
+                    )
+
 
             if (
                 "Request Timeout Error" in error_str

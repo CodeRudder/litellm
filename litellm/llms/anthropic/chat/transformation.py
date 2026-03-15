@@ -1842,6 +1842,48 @@ class AnthropicConfig(AnthropicModelInfo, BaseConfig):
             additional_args={"complete_input_dict": request_data},
         )
 
+        ## ZhipuAI Error Check - Handle HTTP 200 responses with error content
+        # ZhipuAI sometimes returns HTTP 200 with error text instead of JSON
+        # Error format: "LLM error {code}: {message} (request_id: {id})"
+        response_text = raw_response.text
+        if "LLM error " in response_text and len(response_text) < 200:
+            from litellm.litellm_core_utils.exception_mapping_utils import ExceptionCheckers
+            from litellm.exceptions import RateLimitError, InternalServerError, AuthenticationError, APIError
+            
+            # Determine error type
+            zhipu_error_type = ExceptionCheckers.get_zhipu_error_type(response_text)
+            response_headers = getattr(raw_response, "headers", None)
+            
+            if zhipu_error_type == "rate_limit":
+                raise RateLimitError(
+                    message=f"ZhipuAI RateLimitError - {response_text}",
+                    model=model,
+                    llm_provider="anthropic",  # ZhipuAI uses Anthropic-compatible API
+                    response=response_headers,
+                )
+            elif zhipu_error_type == "internal_error":
+                raise InternalServerError(
+                    message=f"ZhipuAI InternalServerError - {response_text}",
+                    model=model,
+                    llm_provider="anthropic",
+                    response=response_headers,
+                )
+            elif zhipu_error_type == "authentication_error":
+                raise AuthenticationError(
+                    message=f"ZhipuAI AuthenticationError - {response_text}",
+                    model=model,
+                    llm_provider="anthropic",
+                    response=response_headers,
+                )
+            else:
+                # Unknown ZhipuAI error
+                raise APIError(
+                    message=f"ZhipuAI APIError - {response_text}",
+                    model=model,
+                    llm_provider="anthropic",
+                    response=response_headers,
+                )
+
         ## RESPONSE OBJECT
         try:
             completion_response = raw_response.json()
