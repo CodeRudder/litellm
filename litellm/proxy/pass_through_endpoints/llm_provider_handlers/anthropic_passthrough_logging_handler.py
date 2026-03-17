@@ -290,6 +290,12 @@ class AnthropicPassthroughLoggingHandler:
 
                 except (StopIteration, StopAsyncIteration):
                     break
+                except Exception as e:
+                    # 捕获其他异常（如AnthropicError），记录并重新抛出，触发重试
+                    verbose_proxy_logger.warning(
+                        f"Error parsing streaming chunk: {str(e)}. Triggering retry."
+                    )
+                    raise  # 重新抛出异常，让上层重试机制处理
 
         complete_streaming_response = litellm.stream_chunk_builder(
             chunks=all_openai_chunks,

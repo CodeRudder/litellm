@@ -194,8 +194,9 @@ class PassThroughStreamingHandler:
                 **kwargs,
             )
         except Exception as e:
+            import traceback
             verbose_proxy_logger.error(
-                f"Error in _route_streaming_logging_to_handler: {str(e)}"
+                f"Error in _route_streaming_logging_to_handler: {str(e)}\n{traceback.format_exc()}"
             )
 
     @staticmethod

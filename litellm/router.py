@@ -5589,7 +5589,13 @@ class Router:
                 try:
                     # Update retry tracking metadata before each retry attempt
                     _metadata["attempted_retries"] = current_attempt + 1
-                    _metadata["max_retries"] = num_retries
+                    # Log retry attempt with request/session ID
+                    _request_id = kwargs.get("litellm_call_id") or kwargs.get("request_id") or "unknown"
+                    _session_id = kwargs.get("session_id") or kwargs.get("user_id") or ""
+                    _session_info = f", session_id={_session_id}" if _session_id else ""
+                    verbose_router_logger.info(
+                        f"Retrying request: request_id={_request_id}{_session_info}, attempt {current_attempt + 1}/{num_retries}, model={model_group}"
+                    )
                     # if the function call is successful, no exception will be raised and we'll break out of the loop
                     response = await self.make_call(original_function, *args, **kwargs)
                     if coroutine_checker.is_async_callable(
@@ -5612,6 +5618,15 @@ class Router:
                     ## LOGGING
                     kwargs = self.log_retry(kwargs=kwargs, e=e)
                     remaining_retries = num_retries - current_attempt - 1
+                    
+                    # Log retry failure if this was the last attempt
+                    if remaining_retries == 0:
+                        _request_id = kwargs.get("litellm_call_id") or kwargs.get("request_id") or "unknown"
+                        _session_id = kwargs.get("session_id") or kwargs.get("user_id") or ""
+                        _session_info = f", session_id={_session_id}" if _session_id else ""
+                        verbose_router_logger.error(
+                            f"Retry failed after {num_retries} attempts: request_id={_request_id}{_session_info}, model={model_group}, error={type(e).__name__}: {str(e)[:100]}"
+                        )
                     _model: Optional[str] = kwargs.get("model")  # type: ignore
                     if _model is not None:
                         (
