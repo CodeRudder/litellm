@@ -5005,8 +5005,24 @@ class StandardLoggingPayloadSetup:
                     tb_lines[:MAXIMUM_TRACEBACK_LINES_TO_LOG]
                 )  # Limit to first 100 lines
 
-        # Get additional error details
-        error_message = str(original_exception)
+        # Get additional error details with friendly messages
+        _raw_msg = str(original_exception) if original_exception else ""
+        if isinstance(original_exception, Exception):
+            _msg_lower = _raw_msg.lower()
+            if "no api key passed in" in _msg_lower:
+                error_message = "Authentication failed: No API key provided. Please include a valid API key in the 'Authorization: Bearer <key>' header."
+            elif "malformed api key" in _msg_lower:
+                error_message = "Authentication failed: Malformed API key. Please ensure the key has the 'Bearer ' prefix, e.g. 'Authorization: Bearer <key>'."
+            elif "expired key" in _msg_lower:
+                error_message = "Authentication failed: Your API key has expired. Please generate a new key."
+            elif "invalid api key" in _msg_lower:
+                error_message = "Authentication failed: The provided API key is invalid."
+            elif "authentication error" in _msg_lower or "auth" in _msg_lower:
+                error_message = "Authentication failed: " + _raw_msg
+            else:
+                error_message = _raw_msg
+        else:
+            error_message = _raw_msg
 
         return StandardLoggingPayloadErrorInformation(
             error_code=error_status,

@@ -117,6 +117,19 @@ class BaseAnthropicMessagesConfig(ABC):
     ) -> "BaseLLMException":
         from litellm.llms.base_llm.chat.transformation import BaseLLMException
 
+        # Map 429 to RateLimitError so router retry policy and cooldown logic work correctly
+        if status_code == 429:
+            import litellm
+            raise litellm.RateLimitError(
+                message=error_message,
+                llm_provider="",
+                model="",
+                response=httpx.Response(
+                    status_code=status_code,
+                    request=httpx.Request(method="POST", url="https://docs.litellm.ai/docs"),
+                ),
+            )
+
         return BaseLLMException(
             message=error_message, status_code=status_code, headers=headers
         )

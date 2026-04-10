@@ -5571,9 +5571,6 @@ class Router:
             else:
                 raise
 
-            verbose_router_logger.debug(
-                f"Retrying request with num_retries: {num_retries}"
-            )
             # decides how long to sleep before retry
             retry_after = self._time_to_sleep_before_retry(
                 e=original_exception,
@@ -5581,6 +5578,17 @@ class Router:
                 num_retries=num_retries,
                 healthy_deployments=_healthy_deployments,
                 all_deployments=_all_deployments,
+            )
+
+            # Log retry initialization with error details
+            _request_id = kwargs.get("litellm_call_id") or kwargs.get("request_id") or "unknown"
+            _session_id = kwargs.get("session_id") or kwargs.get("user_id") or ""
+            _session_info = f", session_id={_session_id}" if _session_id else ""
+            verbose_router_logger.info(
+                f"Retry initialized: request_id={_request_id}{_session_info}, "
+                f"model={model_group}, num_retries={num_retries}, "
+                f"error={type(original_exception).__name__}: {str(original_exception)[:100]}, "
+                f"retry_after={retry_after}s, healthy_deployments={len(_healthy_deployments) if _healthy_deployments else 0}"
             )
 
             await asyncio.sleep(retry_after)
@@ -5608,6 +5616,10 @@ class Router:
                         attempted_retries=current_attempt + 1,
                         max_retries=num_retries,
                     )
+                    verbose_router_logger.info(
+                        f"Retry succeeded: request_id={_request_id}{_session_info}, "
+                        f"attempt {current_attempt + 1}/{num_retries}, model={model_group}"
+                    )
                     return response
 
                 except Exception as e:
@@ -5618,14 +5630,21 @@ class Router:
                     ## LOGGING
                     kwargs = self.log_retry(kwargs=kwargs, e=e)
                     remaining_retries = num_retries - current_attempt - 1
-                    
-                    # Log retry failure if this was the last attempt
+
+                    _request_id = kwargs.get("litellm_call_id") or kwargs.get("request_id") or "unknown"
+                    _session_id = kwargs.get("session_id") or kwargs.get("user_id") or ""
+                    _session_info = f", session_id={_session_id}" if _session_id else ""
                     if remaining_retries == 0:
-                        _request_id = kwargs.get("litellm_call_id") or kwargs.get("request_id") or "unknown"
-                        _session_id = kwargs.get("session_id") or kwargs.get("user_id") or ""
-                        _session_info = f", session_id={_session_id}" if _session_id else ""
                         verbose_router_logger.error(
-                            f"Retry failed after {num_retries} attempts: request_id={_request_id}{_session_info}, model={model_group}, error={type(e).__name__}: {str(e)[:100]}"
+                            f"Retry exhausted: request_id={_request_id}{_session_info}, "
+                            f"attempt {current_attempt + 1}/{num_retries}, model={model_group}, "
+                            f"error={type(e).__name__}: {str(e)[:100]}"
+                        )
+                    else:
+                        verbose_router_logger.warning(
+                            f"Retry attempt failed: request_id={_request_id}{_session_info}, "
+                            f"attempt {current_attempt + 1}/{num_retries}, model={model_group}, "
+                            f"error={type(e).__name__}: {str(e)[:100]}, remaining_retries={remaining_retries}"
                         )
                     _model: Optional[str] = kwargs.get("model")  # type: ignore
                     if _model is not None:
@@ -5663,6 +5682,10 @@ class Router:
                         healthy_deployments=_healthy_deployments,
                         all_deployments=_all_deployments,
                     )
+                    if _timeout > 0:
+                        verbose_router_logger.debug(
+                            f"Sleeping {_timeout}s before next retry: request_id={_request_id}{_session_info}"
+                        )
                     await asyncio.sleep(_timeout)
 
             if type(original_exception) in litellm.LITELLM_EXCEPTION_TYPES:

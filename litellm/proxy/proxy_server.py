@@ -5567,7 +5567,15 @@ async def async_data_generator(
             f"\033[1;31mAn error occurred: {e}\n\n Debug this by setting `--debug`, e.g. `litellm --model gpt-3.5-turbo --debug`"
         )
 
-        if isinstance(e, HTTPException):
+        # 检测timeout异常，重新抛出以触发重试
+        import httpx
+        import asyncio
+        if isinstance(e, (httpx.TimeoutException, asyncio.TimeoutError)):
+            verbose_proxy_logger.warning(
+                f"Timeout error in async_data_generator, triggering retry: {str(e)}"
+            )
+            raise e  # 重新抛出，触发重试
+        elif isinstance(e, HTTPException):
             raise e
         elif isinstance(e, StreamingCallbackError):
             error_msg = str(e)

@@ -281,6 +281,30 @@ class AnthropicPassthroughLoggingHandler:
 
             # Process each individual event
             for event_str in individual_events:
+                # Check for "LLM error" pattern in short chunks
+                try:
+                    event_str_stripped = event_str.strip() if isinstance(event_str, str) else str(event_str).strip()
+                    if event_str_stripped.startswith("LLM error") and len(event_str_stripped) < 200:
+                        # Extract logging information
+                        call_id = getattr(litellm_logging_obj, 'litellm_call_id', 'unknown')
+                        session_id = 'unknown'
+                        if hasattr(litellm_logging_obj, 'model_call_details'):
+                            model_details = litellm_logging_obj.model_call_details or {}
+                            session_id = model_details.get('session_id', 'unknown')
+                        
+                        verbose_proxy_logger.warning(
+                            f"Detected 'LLM error' in short chunk | "
+                            f"call_id={call_id} | "
+                            f"session_id={session_id} | "
+                            f"model={model} | "
+                            f"chunk_length={len(event_str_stripped)} | "
+                            f"chunk_content={event_str_stripped}"
+                        )
+                except Exception as check_error:
+                    verbose_proxy_logger.debug(f"Error checking LLM error pattern: {check_error}")
+                
+                # Original processing
+
                 try:
                     transformed_openai_chunk = anthropic_model_response_iterator.convert_str_chunk_to_generic_chunk(
                         chunk=event_str
@@ -291,11 +315,12 @@ class AnthropicPassthroughLoggingHandler:
                 except (StopIteration, StopAsyncIteration):
                     break
                 except Exception as e:
-                    # 捕获其他异常（如AnthropicError），记录并重新抛出，触发重试
+                    # Logging path — skip malformed chunks, don't raise.
+                    # The request already completed (200 OK); raising here only
+                    # breaks the logging task, it does not trigger a retry.
                     verbose_proxy_logger.warning(
-                        f"Error parsing streaming chunk: {str(e)}. Triggering retry."
+                        f"Skipping unparseable chunk in logging path: {str(e)} | chunk={repr(event_str)[:120]}"
                     )
-                    raise  # 重新抛出异常，让上层重试机制处理
 
         complete_streaming_response = litellm.stream_chunk_builder(
             chunks=all_openai_chunks,

@@ -844,6 +844,10 @@ async def pass_through_request(  # noqa: PLR0915
                     start_time=start_time,
                     passthrough_success_handler_obj=pass_through_endpoint_logging,
                     url_route=str(url),
+                    async_client=async_client,
+                    url=str(url),
+                    headers=headers,
+                    # max_retries will be read from litellm.num_retries or DEFAULT_MAX_RETRIES
                 ),
                 headers=HttpPassThroughEndpointHelpers.get_response_headers(
                     headers=response.headers,
@@ -881,6 +885,10 @@ async def pass_through_request(  # noqa: PLR0915
                     start_time=start_time,
                     passthrough_success_handler_obj=pass_through_endpoint_logging,
                     url_route=str(url),
+                    async_client=async_client,
+                    url=str(url),
+                    headers=headers,
+                    # max_retries will be read from litellm.num_retries or DEFAULT_MAX_RETRIES
                 ),
                 headers=HttpPassThroughEndpointHelpers.get_response_headers(
                     headers=response.headers,

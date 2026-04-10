@@ -466,6 +466,7 @@ class RetryPolicy(BaseModel):
     RateLimitErrorRetries: Optional[int] = None
     ContentPolicyViolationErrorRetries: Optional[int] = None
     InternalServerErrorRetries: Optional[int] = None
+    ServiceUnavailableErrorRetries: Optional[int] = None
 
 
 class AlertingConfig(BaseModel):

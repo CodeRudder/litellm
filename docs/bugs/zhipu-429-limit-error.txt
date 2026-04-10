@@ -1,0 +1,33 @@
+{
+  "status": "failure",
+  "max_retries": null,
+  "batch_models": null,
+  "usage_object": null,
+  "user_api_key": "4e4236743c319c888e46194f6db2462f6042d7cc7c2c4e9273667bea1a00ac37",
+  "cost_breakdown": null,
+  "attempted_retries": null,
+  "error_information": {
+    "traceback": "  File \"/usr/local/lib/python3.11/site-packages/litellm/proxy/anthropic_endpoints/endpoints.py\", line 53, in anthropic_response\n    result = await base_llm_response_processor.base_process_llm_request(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/litellm/proxy/common_request_processing.py\", line 953, in base_process_llm_request\n    responses = await llm_responses\n                ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/litellm/router.py\", line 5005, in async_wrapper\n    return await self._ageneric_api_call_with_fallbacks(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/litellm/router.py\", line 3722, in _ageneric_api_call_with_fallbacks\n    raise e\n  File \"/usr/local/lib/python3.11/site-packages/litellm/router.py\", line 3709, in _ageneric_api_call_with_fallbacks\n    response = await self.async_function_with_fallbacks(**kwargs)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/litellm/router.py\", line 5411, in async_function_with_fallbacks\n    return await self.async_function_with_fallbacks_common_utils(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/litellm/router.py\", line 5368, in async_function_with_fallbacks_common_utils\n    raise original_exception\n  File \"/usr/local/lib/python3.11/site-packages/litellm/router.py\", line 5402, in async_function_with_fallbacks\n    response = await self.async_function_with_retries(*args, **kwargs)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/litellm/router.py\", line 5703, in async_function_with_retries\n    raise original_exception\n  File \"/usr/local/lib/python3.11/site-packages/litellm/router.py\", line 5608, in async_function_with_retries\n    response = await self.make_call(original_function, *args, **kwargs)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/litellm/router.py\", line 5714, in make_call\n    response = await response\n               ^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/litellm/router.py\", line 3834, in _ageneric_api_call_with_fallbacks_helper\n    raise e\n  File \"/usr/local/lib/python3.11/site-packages/litellm/router.py\", line 3820, in _ageneric_api_call_with_fallbacks_helper\n    response = await response  # type: ignore\n               ^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/litellm/utils.py\", line 2072, in wrapper_async\n    raise e\n  File \"/usr/local/lib/python3.11/site-packages/litellm/utils.py\", line 1892, in wrapper_async\n    result = await original_function(*args, **kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/litellm/llms/anthropic/experimental_pass_through/messages/handler.py\", line 188, in anthropic_messages\n    response = await init_response\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/litellm/llms/custom_httpx/llm_http_handler.py\", line 1968, in async_anthropic_messages_handler\n    raise self._handle_error(\n          ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/site-packages/litellm/llms/custom_httpx/llm_http_handler.py\", line 4721, in _handle_error\n    raise provider_config.get_error_class(\n",
+    "error_code": "429",
+    "error_class": "BaseLLMException",
+    "llm_provider": "",
+    "error_message": "{\"error\":{\"code\":\"1305\",\"message\":\"该模型当前访问量过大，请您稍后再试\"},\"request_id\":\"20260409181338c5ddf199e4e04f71\"}"
+  },
+  "applied_guardrails": null,
+  "user_api_key_alias": "claude-code2",
+  "spend_logs_metadata": null,
+  "user_api_key_org_id": null,
+  "proxy_server_request": null,
+  "requester_ip_address": null,
+  "user_api_key_team_id": null,
+  "user_api_key_user_id": "default_user_id",
+  "guardrail_information": null,
+  "model_map_information": null,
+  "mcp_tool_call_metadata": null,
+  "additional_usage_values": {},
+  "cold_storage_object_key": null,
+  "user_api_key_project_id": null,
+  "user_api_key_team_alias": null,
+  "litellm_overhead_time_ms": null,
+  "vector_store_request_metadata": null
+}
