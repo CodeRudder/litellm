@@ -144,7 +144,7 @@ export const COLUMN_LABELS: Record<string, string> = {
   model_group: "模型名称",
   model: "Model",
   model_id: "Model ID",
-  input_tokens: "Tokens (in/out)",
+  input_tokens: "Tokens",
   cache_tokens: "Cache Tokens",
   internal_user: "Internal User",
   end_user: "End User",
@@ -435,14 +435,18 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
     ),
   },
   {
-    header: "Tokens (in/out)",
+    header: "Tokens",
     id: "input_tokens",
     accessorKey: "prompt_tokens",
     cell: (info: any) => {
       const row = info.row.original;
+      const fmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K` : String(n);
+      const inp = row.prompt_tokens || 0;
+      const out = row.completion_tokens || 0;
       return (
-        <span className="text-xs">
-          {row.prompt_tokens || 0}<span className="text-gray-400">/</span>{row.completion_tokens || 0}
+        <span className="text-xs whitespace-nowrap inline-flex items-center gap-2 font-mono">
+          <span className="text-blue-500">↓ {fmt(inp)}</span>
+          <span className="text-green-600">↑ {fmt(out)}</span>
         </span>
       );
     },
@@ -453,14 +457,15 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
     accessorKey: "cache_hit",
     cell: (info: any) => {
       const row = info.row.original;
+      const fmtK = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K` : String(n);
       const cacheRead = row.metadata?.additional_usage_values?.cache_read_input_tokens || 0;
       const cacheCreation = row.metadata?.additional_usage_values?.cache_creation_input_tokens || 0;
       const cacheTotal = (typeof cacheRead === "number" ? cacheRead : 0) + (typeof cacheCreation === "number" ? cacheCreation : 0);
       if (cacheTotal === 0) return <span className="text-xs text-gray-300">0</span>;
       return (
         <div className="text-xs leading-tight">
-          {cacheCreation > 0 && <div><span className="text-amber-600">{cacheCreation}</span> <span className="text-gray-400">create</span></div>}
-          {cacheRead > 0 && <div><span className="text-amber-600">{cacheRead}</span> <span className="text-gray-400">read</span></div>}
+          {cacheCreation > 0 && <div><span className="text-amber-600">{fmtK(cacheCreation)}</span> <span className="text-gray-400">create</span></div>}
+          {cacheRead > 0 && <div><span className="text-amber-600">{fmtK(cacheRead)}</span> <span className="text-gray-400">read</span></div>}
         </div>
       );
     },
