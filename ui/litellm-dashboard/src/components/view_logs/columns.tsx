@@ -126,6 +126,7 @@ export const DEFAULT_VISIBLE_COLUMNS: Record<string, boolean> = {
   internal_user: false,
   end_user: false,
   tags: false,
+  retries: true,
 };
 
 /** Human-readable labels for column visibility picker */
@@ -150,6 +151,7 @@ export const COLUMN_LABELS: Record<string, string> = {
   internal_user: "Internal User",
   end_user: "End User",
   tags: "Tags",
+  retries: "Retries",
 };
 
 export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] => [
@@ -520,6 +522,23 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
             </span>
           </Tooltip>
         </div>
+      );
+    },
+  },
+  {
+    header: "Retries",
+    id: "retries",
+    cell: (info: any) => {
+      const row = info.row.original;
+      const attempted = row.metadata?.attempted_retries;
+      const maxRetries = row.metadata?.max_retries;
+      if (attempted == null && maxRetries == null) return <span className="text-xs text-gray-300">-</span>;
+      const a = attempted ?? 0;
+      const m = maxRetries ?? "-";
+      return (
+        <span className={`text-xs ${a > 0 ? "text-amber-600 font-medium" : "text-gray-400"}`}>
+          {a}/{m}
+        </span>
       );
     },
   },
