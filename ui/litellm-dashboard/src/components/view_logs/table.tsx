@@ -20,6 +20,9 @@ interface DataTableProps<TData, TValue> {
   /** Column visibility state */
   columnVisibility?: Record<string, boolean>;
   onColumnVisibilityChange?: (updaterOrValue: Record<string, boolean> | ((old: Record<string, boolean>) => Record<string, boolean>)) => void;
+  /** Column order state */
+  columnOrder?: string[];
+  onColumnOrderChange?: (updaterOrValue: string[] | ((old: string[]) => string[])) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -35,12 +38,15 @@ export function DataTable<TData, TValue>({
   enableSorting = false,
   columnVisibility,
   onColumnVisibilityChange,
+  columnOrder,
+  onColumnOrderChange,
 }: DataTableProps<TData, TValue>) {
   const supportsExpansion = !!(renderSubComponent || renderChildRows) && !!getRowCanExpand;
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const tableState = {
     ...(columnVisibility ? { columnVisibility } : {}),
+    ...(columnOrder ? { columnOrder } : {}),
     ...(enableSorting ? { sorting } : {}),
   };
 
@@ -54,6 +60,14 @@ export function DataTable<TData, TValue>({
           ? updaterOrValue(columnVisibility || {})
           : updaterOrValue;
         onColumnVisibilityChange(newVisibility);
+      },
+    } : {}),
+    ...(onColumnOrderChange ? {
+      onColumnOrderChange: (updaterOrValue: any) => {
+        const newOrder = typeof updaterOrValue === "function"
+          ? updaterOrValue(columnOrder || [])
+          : updaterOrValue;
+        onColumnOrderChange(newOrder);
       },
     } : {}),
     ...(enableSorting && {

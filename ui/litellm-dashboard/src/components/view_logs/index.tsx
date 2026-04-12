@@ -65,6 +65,10 @@ export default function SpendLogsTable({
     const stored = localStorage.getItem("logsColumnVisibility");
     return stored ? JSON.parse(stored) : DEFAULT_VISIBLE_COLUMNS;
   });
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    const stored = localStorage.getItem("logsColumnOrder");
+    return stored ? JSON.parse(stored) : [];
+  });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const filtersRef = useRef<HTMLDivElement>(null);
   const quickSelectRef = useRef<HTMLDivElement>(null);
@@ -104,10 +108,13 @@ export default function SpendLogsTable({
 
   const queryClient = useQueryClient();
 
-  // Persist column visibility to localStorage
+  // Persist column visibility and order to localStorage
   useEffect(() => {
     localStorage.setItem("logsColumnVisibility", JSON.stringify(columnVisibility));
   }, [columnVisibility]);
+  useEffect(() => {
+    localStorage.setItem("logsColumnOrder", JSON.stringify(columnOrder));
+  }, [columnOrder]);
 
   const [isLiveTail, setIsLiveTail] = useState<boolean>(() => {
     const storedValue = sessionStorage.getItem("isLiveTail");
@@ -685,17 +692,54 @@ export default function SpendLogsTable({
                               Columns
                             </button>
                             {showColumnDropdown && (
-                              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border p-2 z-50 max-h-80 overflow-y-auto">
-                                {Object.entries(COLUMN_LABELS).map(([colId, label]) => (
-                                  <label key={colId} className="flex items-center gap-2 px-2 py-1 text-sm hover:bg-gray-50 rounded cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      checked={columnVisibility[colId] !== false}
-                                      onChange={() => setColumnVisibility((prev: Record<string, boolean>) => ({ ...prev, [colId]: prev[colId] === false }))}
-                                    />
-                                    {label}
-                                  </label>
-                                ))}
+                              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border p-2 z-50 max-h-96 overflow-y-auto">
+                                {(() => {
+                                  // Determine display order: use columnOrder if set, otherwise COLUMN_LABELS order
+                                  const orderedIds = columnOrder.length > 0
+                                    ? [...columnOrder, ...Object.keys(COLUMN_LABELS).filter(id => !columnOrder.includes(id))]
+                                    : Object.keys(COLUMN_LABELS);
+                                  const moveCol = (colId: string, direction: "up" | "down") => {
+                                    setColumnOrder((prev) => {
+                                      const ids = prev.length > 0
+                                        ? [...prev, ...Object.keys(COLUMN_LABELS).filter(id => !prev.includes(id))]
+                                        : Object.keys(COLUMN_LABELS);
+                                      const idx = ids.indexOf(colId);
+                                      if (idx < 0) return prev;
+                                      const newIdx = direction === "up" ? idx - 1 : idx + 1;
+                                      if (newIdx < 0 || newIdx >= ids.length) return prev;
+                                      [ids[idx], ids[newIdx]] = [ids[newIdx], ids[idx]];
+                                      return ids;
+                                    });
+                                  };
+                                  return orderedIds.map((colId) => {
+                                    const label = COLUMN_LABELS[colId];
+                                    if (!label) return null;
+                                    return (
+                                      <div key={colId} className="flex items-center gap-1 px-1 py-1 text-sm hover:bg-gray-50 rounded group">
+                                        <label className="flex items-center gap-2 flex-1 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={columnVisibility[colId] !== false}
+                                            onChange={() => setColumnVisibility((prev: Record<string, boolean>) => ({ ...prev, [colId]: prev[colId] === false }))}
+                                          />
+                                          {label}
+                                        </label>
+                                        <span className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <button
+                                            onClick={() => moveCol(colId, "up")}
+                                            className="leading-none text-gray-400 hover:text-gray-700 px-1"
+                                            title="Move up"
+                                          >▲</button>
+                                          <button
+                                            onClick={() => moveCol(colId, "down")}
+                                            className="leading-none text-gray-400 hover:text-gray-700 px-1 -mt-1"
+                                            title="Move down"
+                                          >▼</button>
+                                        </span>
+                                      </div>
+                                    );
+                                  });
+                                })()}
                               </div>
                             )}
                           </div>
@@ -791,6 +835,8 @@ export default function SpendLogsTable({
                     isLoading={logs.isLoading}
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}
+                    columnOrder={columnOrder}
+                    onColumnOrderChange={setColumnOrder}
                   />
                 </div>
               </>

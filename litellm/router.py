@@ -5500,6 +5500,8 @@ class Router:
         _metadata[
             "max_retries"
         ] = num_retries  # Updated after overrides in exception handler
+        ## RECORD INITIAL REQUEST TIME - used to calculate total duration across all retries
+        _metadata["initial_request_time"] = time.time()
         try:
             self._handle_mock_testing_rate_limit_error(
                 model_group=model_group, kwargs=kwargs
@@ -5509,6 +5511,8 @@ class Router:
             response = add_retry_headers_to_response(
                 response=response, attempted_retries=0, max_retries=None
             )
+            # Calculate total request duration (no retries in this path)
+            _metadata["total_request_duration_ms"] = round((time.time() - _metadata["initial_request_time"]) * 1000, 2)
             return response
         except Exception as e:
             current_attempt = None
@@ -5616,6 +5620,8 @@ class Router:
                         attempted_retries=current_attempt + 1,
                         max_retries=num_retries,
                     )
+                    # Calculate total request duration across all retries
+                    _metadata["total_request_duration_ms"] = round((time.time() - _metadata["initial_request_time"]) * 1000, 2)
                     verbose_router_logger.info(
                         f"Retry succeeded: request_id={_request_id}{_session_info}, "
                         f"attempt {current_attempt + 1}/{num_retries}, model={model_group}"
@@ -5690,6 +5696,8 @@ class Router:
 
             if type(original_exception) in litellm.LITELLM_EXCEPTION_TYPES:
                 setattr(original_exception, "max_retries", num_retries)
+                # Calculate total request duration across all retries (failure path)
+                _metadata["total_request_duration_ms"] = round((time.time() - _metadata["initial_request_time"]) * 1000, 2)
                 # current_attempt is 0-indexed (0 to num_retries-1), so after loop completion
                 # it represents the last attempt index. The actual number of retries attempted
                 # is current_attempt + 1, which equals num_retries when all retries are exhausted.

@@ -126,6 +126,7 @@ export const DEFAULT_VISIBLE_COLUMNS: Record<string, boolean> = {
   end_user: false,
   tags: false,
   retries: true,
+  total_duration: false,
 };
 
 /** Human-readable labels for column visibility picker */
@@ -150,6 +151,7 @@ export const COLUMN_LABELS: Record<string, string> = {
   end_user: "End User",
   tags: "Tags",
   retries: "Retries",
+  total_duration: "Total Duration",
 };
 
 export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] => [
@@ -445,8 +447,8 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
       const out = row.completion_tokens || 0;
       return (
         <span className="text-xs whitespace-nowrap inline-flex items-center gap-2 font-mono">
-          <span className="text-blue-500">↓ {fmt(inp)}</span>
-          <span className="text-green-600">↑ {fmt(out)}</span>
+          <span className="text-blue-500 inline-block w-16">↓ {fmt(inp)}</span>
+          <span className="text-green-600 inline-block w-12">↑ {fmt(out)}</span>
         </span>
       );
     },
@@ -539,6 +541,24 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
         <span className={`text-xs ${a > 0 ? "text-amber-600 font-medium" : "text-gray-400"}`}>
           {a}/{m}
         </span>
+      );
+    },
+  },
+  {
+    header: "Total Duration",
+    id: "total_duration",
+    cell: (info: any) => {
+      const row = info.row.original;
+      const totalDurationMs = row.metadata?.total_request_duration_ms;
+      if (totalDurationMs == null) return <span className="text-xs text-gray-300">-</span>;
+      const seconds = (totalDurationMs / 1000).toFixed(1);
+      const mins = totalDurationMs >= 60000 ? `${(totalDurationMs / 60000).toFixed(1)}m` : null;
+      return (
+        <Tooltip title={`${totalDurationMs}ms${mins ? ` (${seconds}s)` : ""}`}>
+          <span className="text-xs text-gray-600 font-mono">
+            {mins ? `${mins}` : `${seconds}s`}
+          </span>
+        </Tooltip>
       );
     },
   },
