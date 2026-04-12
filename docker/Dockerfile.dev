@@ -104,6 +104,10 @@ COPY docker/entrypoint.sh docker/prod_entrypoint.sh ./docker/
 COPY litellm/ ./litellm/
 COPY pyproject.toml README.md schema.prisma poetry.lock ./
 
+# Copy pre-built Admin UI from builder stage into the source tree
+# (proxy_server.py uses __file__ to locate _experimental/out, which resolves to /app/litellm/proxy/)
+COPY --from=builder /app/litellm/proxy/_experimental/out ./litellm/proxy/_experimental/out
+
 # Copy pre-built wheels and install everything at once
 COPY --from=builder /wheels/ /wheels/
 COPY --from=builder /app/dist/*.whl .
