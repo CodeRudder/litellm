@@ -81,6 +81,7 @@ export default function SpendLogsTable({
   const [selectedKeyHash, setSelectedKeyHash] = useState("");
   const [selectedModelId, setSelectedModelId] = useState("");
   const [selectedModelGroup, setSelectedModelGroup] = useState("");
+  const [selectedHasRetries, setSelectedHasRetries] = useState("");
   const [selectedKeyInfo, setSelectedKeyInfo] = useState<KeyResponse | null>(null);
   const [selectedKeyIdInfoView, setSelectedKeyIdInfoView] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState("");
@@ -186,6 +187,7 @@ export default function SpendLogsTable({
       selectedStatus,
       selectedModelId,
       selectedModelGroup,
+      selectedHasRetries,
       sortBy,
       sortOrder,
     ],
@@ -222,6 +224,7 @@ export default function SpendLogsTable({
           status_filter: selectedStatus || undefined,
           model_id: selectedModelId || undefined,
           model_group: selectedModelGroup || undefined,
+          has_retries: selectedHasRetries || undefined,
           sort_by: sortBy,
           sort_order: sortOrder,
         },
@@ -299,6 +302,7 @@ export default function SpendLogsTable({
     setSelectedStatus(filters["Status"] || "");
     setSelectedModelId(filters["Model"] || "");
     setSelectedModelGroup(filters["Model Group"] || "");
+    setSelectedHasRetries(filters["Retries"] || "");
     setSelectedEndUser(filters["End User"] || "");
 
     // Key Alias filtering is handled server-side by performSearch via the key_alias param.
@@ -501,6 +505,15 @@ export default function SpendLogsTable({
       name: "Error Message",
       label: "Error Message",
       isSearchable: false,
+    },
+    {
+      name: "Retries",
+      label: "Retries",
+      isSearchable: false,
+      options: [
+        { label: "Has Retries", value: "yes" },
+        { label: "No Retries", value: "no" },
+      ],
     },
   ];
 

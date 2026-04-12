@@ -121,7 +121,6 @@ export const DEFAULT_VISIBLE_COLUMNS: Record<string, boolean> = {
   model: true,
   model_id: true,
   input_tokens: true,
-  output_tokens: true,
   cache_tokens: true,
   internal_user: false,
   end_user: false,
@@ -145,8 +144,7 @@ export const COLUMN_LABELS: Record<string, string> = {
   model_group: "模型名称",
   model: "Model",
   model_id: "Model ID",
-  input_tokens: "Input Tokens",
-  output_tokens: "Output Tokens",
+  input_tokens: "Tokens (in/out)",
   cache_tokens: "Cache Tokens",
   internal_user: "Internal User",
   end_user: "End User",
@@ -437,20 +435,17 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
     ),
   },
   {
-    header: "Input Tokens",
+    header: "Tokens (in/out)",
     id: "input_tokens",
     accessorKey: "prompt_tokens",
-    cell: (info: any) => (
-      <span className="text-xs">{String(info.getValue() || "0")}</span>
-    ),
-  },
-  {
-    header: "Output Tokens",
-    id: "output_tokens",
-    accessorKey: "completion_tokens",
-    cell: (info: any) => (
-      <span className="text-xs">{String(info.getValue() || "0")}</span>
-    ),
+    cell: (info: any) => {
+      const row = info.row.original;
+      return (
+        <span className="text-xs">
+          {row.prompt_tokens || 0}<span className="text-gray-400">/</span>{row.completion_tokens || 0}
+        </span>
+      );
+    },
   },
   {
     header: "Cache Tokens",

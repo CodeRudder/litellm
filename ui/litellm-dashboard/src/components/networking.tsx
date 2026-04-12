@@ -2605,6 +2605,8 @@ interface UiSpendLogsParams {
   model_id?: string;
   /** Filter by model group (model name) */
   model_group?: string;
+  /** Filter by retry status */
+  has_retries?: string;
   key_alias?: string;
   error_code?: string;
   error_message?: string;

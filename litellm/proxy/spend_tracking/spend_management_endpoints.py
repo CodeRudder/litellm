@@ -1700,6 +1700,9 @@ async def ui_view_spend_logs(  # noqa: PLR0915
     error_message: Optional[str] = fastapi.Query(
         default=None, description="Filter logs by error message (partial string match)"
     ),
+    has_retries: Optional[str] = fastapi.Query(
+        default=None, description="Filter logs by retry status: 'yes' (retried), 'no' (not retried)"
+    ),
     sort_by: str = fastapi.Query(
         default="startTime",
         description="Sort logs by field: spend, total_tokens, startTime, or endTime",
@@ -1964,6 +1967,16 @@ async def ui_view_spend_logs(  # noqa: PLR0915
             )
             sql_params.append(f"%{error_message}%")
             p += 1
+
+        # Filter by retry status
+        if has_retries == "yes":
+            sql_conditions.append(
+                f"(metadata->>'attempted_retries' IS NOT NULL AND metadata->>'attempted_retries' != '0' AND metadata->>'attempted_retries' != 'None')"
+            )
+        elif has_retries == "no":
+            sql_conditions.append(
+                f"(metadata->>'attempted_retries' IS NULL OR metadata->>'attempted_retries' = '0' OR metadata->>'attempted_retries' = 'None')"
+            )
 
         # Quote column names that need quoting in SQL
         _sql_col = (

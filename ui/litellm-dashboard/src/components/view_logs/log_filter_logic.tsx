@@ -22,6 +22,7 @@ const FILTER_KEYS = {
   KEY_ALIAS: "Key Alias",
   ERROR_CODE: "Error Code",
   ERROR_MESSAGE: "Error Message",
+  HAS_RETRIES: "Retries",
 } as const;
 
 export type FilterKey = keyof typeof FILTER_KEYS;
@@ -68,6 +69,7 @@ export function useLogFilterLogic({
       [FILTER_KEYS.KEY_ALIAS]: "",
       [FILTER_KEYS.ERROR_CODE]: "",
       [FILTER_KEYS.ERROR_MESSAGE]: "",
+      [FILTER_KEYS.HAS_RETRIES]: "",
     }),
     [],
   );
