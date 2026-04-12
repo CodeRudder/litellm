@@ -2603,6 +2603,8 @@ interface UiSpendLogsParams {
   model?: string;
   /** Filter by model ID (litellm model deployment id) */
   model_id?: string;
+  /** Filter by model group (model name) */
+  model_group?: string;
   key_alias?: string;
   error_code?: string;
   error_message?: string;

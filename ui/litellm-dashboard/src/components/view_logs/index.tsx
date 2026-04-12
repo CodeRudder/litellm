@@ -18,7 +18,7 @@ import FilterComponent, { FilterOption } from "../molecules/filter";
 import { allEndUsersCall, keyInfoV1Call, uiSpendLogsCall } from "../networking";
 import KeyInfoView from "../templates/key_info_view";
 import AuditLogs from "./audit_logs";
-import { createColumns, LogEntry, type LogsSortField } from "./columns";
+import { createColumns, LogEntry, type LogsSortField, DEFAULT_VISIBLE_COLUMNS, COLUMN_LABELS } from "./columns";
 import { ConfigInfoMessage } from "./ConfigInfoMessage";
 import { AGENT_CALL_TYPES, ERROR_CODE_OPTIONS, MCP_CALL_TYPES, QUICK_SELECT_OPTIONS } from "./constants";
 import { CostBreakdownViewer } from "./CostBreakdownViewer";
@@ -60,7 +60,11 @@ export default function SpendLogsTable({
   const [showFilters, setShowFilters] = useState(false);
   const [showColumnDropdown, setShowColumnDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(20);
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(() => {
+    const stored = localStorage.getItem("logsColumnVisibility");
+    return stored ? JSON.parse(stored) : DEFAULT_VISIBLE_COLUMNS;
+  });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const filtersRef = useRef<HTMLDivElement>(null);
   const quickSelectRef = useRef<HTMLDivElement>(null);
@@ -76,6 +80,7 @@ export default function SpendLogsTable({
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [selectedKeyHash, setSelectedKeyHash] = useState("");
   const [selectedModelId, setSelectedModelId] = useState("");
+  const [selectedModelGroup, setSelectedModelGroup] = useState("");
   const [selectedKeyInfo, setSelectedKeyInfo] = useState<KeyResponse | null>(null);
   const [selectedKeyIdInfoView, setSelectedKeyIdInfoView] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState("");
@@ -97,6 +102,11 @@ export default function SpendLogsTable({
   const [isMainQueryEnabled, setIsMainQueryEnabled] = useState(true);
 
   const queryClient = useQueryClient();
+
+  // Persist column visibility to localStorage
+  useEffect(() => {
+    localStorage.setItem("logsColumnVisibility", JSON.stringify(columnVisibility));
+  }, [columnVisibility]);
 
   const [isLiveTail, setIsLiveTail] = useState<boolean>(() => {
     const storedValue = sessionStorage.getItem("isLiveTail");
@@ -175,6 +185,7 @@ export default function SpendLogsTable({
       filterByCurrentUser ? userID : null,
       selectedStatus,
       selectedModelId,
+      selectedModelGroup,
       sortBy,
       sortOrder,
     ],
@@ -210,6 +221,7 @@ export default function SpendLogsTable({
           end_user: selectedEndUser || undefined,
           status_filter: selectedStatus || undefined,
           model_id: selectedModelId || undefined,
+          model_group: selectedModelGroup || undefined,
           sort_by: sortBy,
           sort_order: sortOrder,
         },
@@ -286,6 +298,7 @@ export default function SpendLogsTable({
     }
     setSelectedStatus(filters["Status"] || "");
     setSelectedModelId(filters["Model"] || "");
+    setSelectedModelGroup(filters["Model Group"] || "");
     setSelectedEndUser(filters["End User"] || "");
 
     // Key Alias filtering is handled server-side by performSearch via the key_alias param.
@@ -422,6 +435,29 @@ export default function SpendLogsTable({
       name: "Model",
       label: "Model",
       customComponent: PaginatedModelSelect,
+    },
+    {
+      name: "Model Group",
+      label: "Model Group",
+      isSearchable: true,
+      searchFn: async (searchText: string) => {
+        if (!accessToken) return [];
+        const data = await uiSpendLogsCall({
+          accessToken,
+          start_date: moment().subtract(7, "days").utc().format("YYYY-MM-DD HH:mm:ss"),
+          end_date: moment().utc().format("YYYY-MM-DD HH:mm:ss"),
+          page: 1,
+          page_size: 1,
+        });
+        const groups = [...new Set(data.data.map((l: LogEntry) => l.model_group).filter(Boolean))] as string[];
+        const filtered = groups.filter((g: string) => g.toLowerCase().includes(searchText.toLowerCase()));
+        return filtered.map((g: string) => ({ label: g, value: g }));
+      },
+    },
+    {
+      name: "Model ID",
+      label: "Model ID",
+      isSearchable: false,
     },
     {
       name: "Key Alias",
@@ -614,6 +650,42 @@ export default function SpendLogsTable({
                           >
                             {isButtonLoading ? "Fetching" : "Fetch"}
                           </Button>
+
+                          <select
+                            value={pageSize}
+                            onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                            className="px-2 py-2 text-sm border rounded-md"
+                            title="Rows per page"
+                          >
+                            {[10, 20, 50, 100].map((n) => (
+                              <option key={n} value={n}>{n}/page</option>
+                            ))}
+                          </select>
+
+                          <div className="relative" ref={dropdownRef}>
+                            <button
+                              onClick={() => setShowColumnDropdown(!showColumnDropdown)}
+                              className="px-2 py-2 text-sm border rounded-md hover:bg-gray-50 flex items-center gap-1"
+                              title="Select columns"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>
+                              Columns
+                            </button>
+                            {showColumnDropdown && (
+                              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border p-2 z-50 max-h-80 overflow-y-auto">
+                                {Object.entries(COLUMN_LABELS).map(([colId, label]) => (
+                                  <label key={colId} className="flex items-center gap-2 px-2 py-1 text-sm hover:bg-gray-50 rounded cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={columnVisibility[colId] !== false}
+                                      onChange={() => setColumnVisibility((prev: Record<string, boolean>) => ({ ...prev, [colId]: prev[colId] === false }))}
+                                    />
+                                    {label}
+                                  </label>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {isCustomDate && (
@@ -704,6 +776,8 @@ export default function SpendLogsTable({
                     data={filteredData}
                     onRowClick={handleRowClick}
                     isLoading={logs.isLoading}
+                    columnVisibility={columnVisibility}
+                    onColumnVisibilityChange={setColumnVisibility}
                   />
                 </div>
               </>

@@ -17,6 +17,9 @@ interface DataTableProps<TData, TValue> {
   noDataMessage?: string;
   /** Enable client-side column sorting (defaults to false to avoid conflicts with server-side sorting) */
   enableSorting?: boolean;
+  /** Column visibility state */
+  columnVisibility?: Record<string, boolean>;
+  onColumnVisibilityChange?: (updaterOrValue: Record<string, boolean> | ((old: Record<string, boolean>) => Record<string, boolean>)) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -30,17 +33,30 @@ export function DataTable<TData, TValue>({
   loadingMessage = "🚅 Loading logs...",
   noDataMessage = "No logs found",
   enableSorting = false,
+  columnVisibility,
+  onColumnVisibilityChange,
 }: DataTableProps<TData, TValue>) {
   const supportsExpansion = !!(renderSubComponent || renderChildRows) && !!getRowCanExpand;
   const [sorting, setSorting] = useState<SortingState>([]);
 
+  const tableState = {
+    ...(columnVisibility ? { columnVisibility } : {}),
+    ...(enableSorting ? { sorting } : {}),
+  };
+
   const table = useReactTable<TData>({
     data,
     columns,
-    ...(enableSorting && {
-      state: {
-        sorting,
+    state: tableState,
+    ...(onColumnVisibilityChange ? {
+      onColumnVisibilityChange: (updaterOrValue: any) => {
+        const newVisibility = typeof updaterOrValue === "function"
+          ? updaterOrValue(columnVisibility || {})
+          : updaterOrValue;
+        onColumnVisibilityChange(newVisibility);
       },
+    } : {}),
+    ...(enableSorting && {
       onSortingChange: setSorting,
       enableSortingRemoval: false,
     }),
@@ -55,8 +71,8 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <div className="rounded-lg custom-border overflow-x-auto w-full max-w-full box-border">
-      <Table className="[&_td]:py-0.5 [&_th]:py-1 table-fixed w-full box-border" style={{ minWidth: "400px" }}>
+    <div className="rounded-lg custom-border overflow-x-auto w-full max-w-full box-border" style={{ scrollbarWidth: "thin" }}>
+      <Table className="[&_td]:py-0.5 [&_th]:py-1 w-full box-border" style={{ minWidth: "1400px" }}>
         <TableHead>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>

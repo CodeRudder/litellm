@@ -41,6 +41,7 @@ export type LogEntry = {
   team_id: string;
   model: string;
   model_id: string;
+  model_group?: string;
   api_base?: string;
   call_type: string;
   spend: number;
@@ -103,6 +104,54 @@ const SortableHeader = ({
   </div>
 );
 
+/** Default set of visible column IDs – used by the column-visibility picker */
+export const DEFAULT_VISIBLE_COLUMNS: Record<string, boolean> = {
+  time: true,
+  type: true,
+  status: true,
+  session_id: false,
+  request_id: true,
+  cost: true,
+  duration: true,
+  ttft: false,
+  team_name: false,
+  key_hash: false,
+  key_name: false,
+  model_group: true,
+  model: true,
+  model_id: true,
+  input_tokens: true,
+  output_tokens: true,
+  cache_tokens: true,
+  internal_user: false,
+  end_user: false,
+  tags: false,
+};
+
+/** Human-readable labels for column visibility picker */
+export const COLUMN_LABELS: Record<string, string> = {
+  time: "Time",
+  type: "Type",
+  status: "Status",
+  session_id: "Session ID",
+  request_id: "Request ID",
+  cost: "Cost",
+  duration: "Duration (s)",
+  ttft: "TTFT (s)",
+  team_name: "Team Name",
+  key_hash: "Key Hash",
+  key_name: "Key Name",
+  model_group: "模型名称",
+  model: "Model",
+  model_id: "Model ID",
+  input_tokens: "Input Tokens",
+  output_tokens: "Output Tokens",
+  cache_tokens: "Cache Tokens",
+  internal_user: "Internal User",
+  end_user: "End User",
+  tags: "Tags",
+};
+
 export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] => [
   {
     header: sortProps
@@ -116,6 +165,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
           />
         )
       : "Time",
+    id: "time",
     accessorKey: "startTime",
     cell: (info: any) => <TimeCell utcTime={info.getValue()} />,
   },
@@ -169,6 +219,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
   },
   {
     header: "Status",
+    id: "status",
     accessorKey: "metadata.status",
     cell: (info: any) => {
       const status = info.getValue() || "Success";
@@ -187,6 +238,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
   },
   {
     header: "Session ID",
+    id: "session_id",
     accessorKey: "session_id",
     cell: (info: any) => {
       const value = String(info.getValue() || "");
@@ -208,6 +260,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
 
   {
     header: "Request ID",
+    id: "request_id",
     accessorKey: "request_id",
     cell: (info: any) => (
       <Tooltip title={String(info.getValue() || "")}>
@@ -227,6 +280,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
           />
         )
       : "Cost",
+    id: "cost",
     accessorKey: "spend",
     cell: (info: any) => {
       const row = info.row.original;
@@ -259,6 +313,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
           />
         )
       : "Duration (s)",
+    id: "duration",
     accessorKey: "request_duration_ms",
     cell: (info: any) => {
       const ms = info.getValue();
@@ -273,6 +328,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
   },
   {
     header: "TTFT (s)",
+    id: "ttft",
     accessorKey: "completionStartTime",
     cell: (info: any) => {
       const row = info.row.original;
@@ -292,6 +348,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
   },
   {
     header: "Team Name",
+    id: "team_name",
     accessorKey: "metadata.user_api_key_team_alias",
     cell: (info: any) => (
       <Tooltip title={String(info.getValue() || "-")}>
@@ -301,6 +358,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
   },
   {
     header: "Key Hash",
+    id: "key_hash",
     accessorKey: "metadata.user_api_key",
     cell: (info: any) => {
       const value = String(info.getValue() || "-");
@@ -320,6 +378,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
   },
   {
     header: "Key Name",
+    id: "key_name",
     accessorKey: "metadata.user_api_key_alias",
     cell: (info: any) => (
       <Tooltip title={String(info.getValue() || "-")}>
@@ -328,7 +387,18 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
     ),
   },
   {
+    header: "模型名称",
+    id: "model_group",
+    accessorKey: "model_group",
+    cell: (info: any) => (
+      <Tooltip title={String(info.getValue() || "-")}>
+        <span className="max-w-[15ch] truncate block">{String(info.getValue() || "-")}</span>
+      </Tooltip>
+    ),
+  },
+  {
     header: "Model",
+    id: "model",
     accessorKey: "model",
     cell: (info: any) => {
       const row = info.row.original;
@@ -355,32 +425,52 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
     },
   },
   {
-    header: sortProps
-      ? () => (
-          <SortableHeader
-            label="Tokens"
-            field="total_tokens"
-            sortBy={sortProps.sortBy}
-            sortOrder={sortProps.sortOrder}
-            onSortChange={sortProps.onSortChange}
-          />
-        )
-      : "Tokens",
-    accessorKey: "total_tokens",
+    header: "Model ID",
+    id: "model_id",
+    accessorKey: "model_id",
+    cell: (info: any) => (
+      <Tooltip title={String(info.getValue() || "-")}>
+        <span className="font-mono text-xs max-w-[15ch] truncate block">{String(info.getValue() || "-")}</span>
+      </Tooltip>
+    ),
+  },
+  {
+    header: "Input Tokens",
+    id: "input_tokens",
+    accessorKey: "prompt_tokens",
+    cell: (info: any) => (
+      <span className="text-xs">{String(info.getValue() || "0")}</span>
+    ),
+  },
+  {
+    header: "Output Tokens",
+    id: "output_tokens",
+    accessorKey: "completion_tokens",
+    cell: (info: any) => (
+      <span className="text-xs">{String(info.getValue() || "0")}</span>
+    ),
+  },
+  {
+    header: "Cache Tokens",
+    id: "cache_tokens",
+    accessorKey: "cache_hit",
     cell: (info: any) => {
       const row = info.row.original;
+      const cacheRead = row.metadata?.additional_usage_values?.cache_read_input_tokens || 0;
+      const cacheCreation = row.metadata?.additional_usage_values?.cache_creation_input_tokens || 0;
+      const cacheTotal = (typeof cacheRead === "number" ? cacheRead : 0) + (typeof cacheCreation === "number" ? cacheCreation : 0);
+      if (cacheTotal === 0) return <span className="text-xs text-gray-300">0</span>;
       return (
-        <span className="text-sm">
-          {String(row.total_tokens || "0")}
-          <span className="text-gray-400 text-xs ml-1">
-            ({String(row.prompt_tokens || "0")}+{String(row.completion_tokens || "0")})
-          </span>
-        </span>
+        <div className="text-xs leading-tight">
+          {cacheCreation > 0 && <div><span className="text-amber-600">{cacheCreation}</span> <span className="text-gray-400">create</span></div>}
+          {cacheRead > 0 && <div><span className="text-amber-600">{cacheRead}</span> <span className="text-gray-400">read</span></div>}
+        </div>
       );
     },
   },
   {
     header: "Internal User",
+    id: "internal_user",
     accessorKey: "user",
     cell: (info: any) => (
       <Tooltip title={String(info.getValue() || "-")}>
@@ -390,6 +480,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
   },
   {
     header: "End User",
+    id: "end_user",
     accessorKey: "end_user",
     cell: (info: any) => (
       <Tooltip title={String(info.getValue() || "-")}>
@@ -400,6 +491,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
 
   {
     header: "Tags",
+    id: "tags",
     accessorKey: "request_tags",
     cell: (info: any) => {
       const tags = info.getValue();
